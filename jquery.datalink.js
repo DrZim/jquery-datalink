@@ -39,6 +39,10 @@ function unbind(obj, wrapped, handler) {
 	wrapped.unbind( obj.nodeType ? "change" : "changeData", handler );
 }
 
+function not(value) {
+	return !value;
+}
+
 $.extend({
 	cleanData: function( elems ) {
 		for ( var j, i = 0, elem; (elem = elems[i]) != null; i++ ) {
@@ -69,8 +73,12 @@ $.extend({
 		oldcleandata( elems );
 	},
 	convertFn: {
-		"!": function(value) {
-			return !value;
+		"!": not
+	},
+	converters: {
+		"!": {
+			convert: not,
+			convertBack: not
 		}
 	}
 });
@@ -169,11 +177,19 @@ $.extend($.fn, {
 				var name = v,
 					convert,
 					convertBack,
+					converter,
 					twoWay;
 				if ( $.isPlainObject( v ) ) {
 					name = v.name || n;
-					convert = v.convert;
-					convertBack = v.convertBack;
+					if ( typeof v.converter === "string" ) {
+						converter = $.converters[ converter ];
+						if ( converter ) {
+							convert = converter.convert;
+							convertBack = converter.convertBack;
+						}
+					}
+					convert = v.convert || convert;
+					convertBack = v.convertBack || convertBack;
 					twoWay = v.twoWay !== false;
 					hasTwoWay |= twoWay;
 				} else {

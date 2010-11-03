@@ -5,67 +5,39 @@
 */
 (function (jQuery, undefined) {
 
-	// Note: The following two functions where copyed from:
-	// http://infinity88.com/jquery-datalink/jquery.datalink.js
-	// which was an early version of the jquery.datalink plugin that supported array change events
-
-	// Helper function to raise array events
-	function raiseEvents(type, context, change, setValue) {
-		// todo: peek if there are any listeners to avoid extra work
-		var ret,
-			event = $.Event(type + "Changing"),
-			isArray = type === "array";
-		event.newValue = isArray ? change.arguments : change.newValue;
-		$.event.trigger(event, [change], context);
-		if (!event.isDefaultPrevented()) {
-			var newvalue = isArray ? change.arguments : event.newValue;
-			ret = setValue(newvalue);
-			var oldvalue = change.oldValue;
-			if (isArray || typeof oldvalue === "undefined" || newvalue !== oldvalue) {
-				isArray ? (change.arguments = newvalue) : (change.newValue = newvalue);
-				$.event.trigger(type + "Change", [change], context);
-			}
-		}
-		return ret;
-	}
-
-	// Raises arrayChanging and arrayChange events when arrays are manipulated with $.x methods
-	$.each("pop push reverse shift sort splice unshift".split(" "), function (i, name) {
-		$[name] = function (arr) {
-			var args = $.makeArray(arguments);
-			args.splice(0, 1);
-			return raiseEvents("array", arr, { change: name, arguments: args }, function (arguments) {
-				arr[name].apply(arr, arguments);
-			});
-		}
-	});
-
 	// Called during template execution to set up a linked field
-	$.tmpl.linkAttr = function link(tmplItem, data, field, value, mapping) {
+	$.tmpl.linkAttr = function link(tmplItem, data, field, value, converter) {
 
 		// Set the rendered callback
 		tmplItem.rendered = rendered;
 
-		// Lookup named converters
-		if (mapping) {
-			if (mapping.convert && typeof mapping.convert === "string") {
-				mapping.convert = $.convertFn[mapping.convert];
+		if (converter) {
+
+			// Lookup named converters
+			if (typeof converter === "string") {
+				converter = $.converters[converter];
 			}
-			if (mapping.convertBack && typeof mapping.convertBack === "string") {
-				mapping.convertBack = $.convertFn[mapping.convertBack];
+
+			var convert = converter.convert,
+				convertBack = converter.convertBack;
+
+			if (converter.convert && typeof converter.convert === "string") {
+				converter.convert = $.convertFn[converter.convert];
 			}
-			if (typeof mapping === "string") {
-				mapping = { convert: $.convertFn[mapping], convertBack: $.convertFn[mapping] };
+			if (converter.convertBack && typeof converter.convertBack === "string") {
+				converter.convertBack = $.convertFn[converter.convertBack];
 			}
 		}
+		else
+			converter = {};
 
 		// Add the link to the current template item
 		if (!tmplItem._links)
 			tmplItem._links = [];
-		tmplItem._links.push({ data: data, field: field, mapping: mapping });
+		tmplItem._links.push({ data: data, field: field, value: value, converter: converter });
 
 		// Return a tagged expression to be located in the DOM immediately after rendering
-		return "{{" + (tmplItem._links.length - 1) + "," + value + "}}";
+		return "{{link(" + (tmplItem._links.length - 1) + ")}}";
 	};
 
 	// Called after template execution on the source item, enabling element binding
@@ -91,9 +63,9 @@
 				var mapping = {};
 				mapping[binding.field] = {
 
-					convertBack: function (value, source, target) {
-						if (binding.mapping && binding.mapping.convertBack) {
-							value = binding.mapping.convertBack(value, source, target)
+					convert: function (value, source, target) {
+						if (binding.converter && binding.converter.convert) {
+							value = binding.converter.convert(value, source, target)
 							if (value === undefined)
 								return;
 						}
@@ -135,7 +107,7 @@
 			if (/^(textarea|input|select)$/i.test(elem.nodeName) && attrName == "value") {
 
 				// Create the link mapping
-				mapping[binding.field] = $.extend({ name: elem.name }, binding.mapping);
+				mapping[binding.field] = $.extend({ name: elem.name }, { convert: binding.converter.convertBack, convertBack: binding.converter.convert });
 			}
 
 			// Otherwise, setup one-way linking
@@ -144,9 +116,9 @@
 				// Create the link mapping
 				mapping[binding.field] = {
 
-					convertBack: function (value, source, target) {
-						if (binding.mapping && binding.mapping.convertBack) {
-							value = binding.mapping.convertBack(value, source, target)
+					convert: function (value, source, target) {
+						if (binding.converter && binding.converter.convert) {
+							value = binding.converter.convert(value, source, target)
 							if (value === undefined)
 								return;
 						}
@@ -162,28 +134,59 @@
 
 	// Gets the binding attached to a template item if the expression represents a binding
 	function getBinding(tmplItem, elem, expr) {
-		var match = expr.match(/^\{\{(\d+),(.*)\}\}$/);
+		var match = expr.match(/^\{\{link\((\d+)\)\}\}$/);
 		if (match) {
 
 			var index = parseInt(match[1]),
-				binding = tmplItem._links[index],
-				value = match[2];
+				binding = tmplItem._links[index];
 
-			// Convert the value if a convertBack converter was specified
-			if (binding.mapping && binding.mapping.convertBack) {
-				var convertedValue = binding.mapping.convertBack(value, binding.data, elem);
+			// Convert the value if a converter was specified
+			if (binding.converter && binding.converter.convert) {
+				var convertedValue = binding.converter.convert(binding.value, binding.data, elem);
 				if (convertedValue !== undefined) {
-					value = convertedValue;
+					binding.value = convertedValue;
 				}
 			}
-
-			// Set the binding value;
-			binding.value = value;
 
 			return binding;
 		}
 		return null;
 	}
+
+	// Note: The following two functions where copyed from:
+	// http://infinity88.com/jquery-datalink/jquery.datalink.js
+	// which was an early version of the jquery.datalink plugin that supported array change events
+
+	// Helper function to raise array events
+	function raiseEvents(type, context, change, setValue) {
+		// todo: peek if there are any listeners to avoid extra work
+		var ret,
+			event = $.Event(type + "Changing"),
+			isArray = type === "array";
+		event.newValue = isArray ? change.arguments : change.newValue;
+		$.event.trigger(event, [change], context);
+		if (!event.isDefaultPrevented()) {
+			var newvalue = isArray ? change.arguments : event.newValue;
+			ret = setValue(newvalue);
+			var oldvalue = change.oldValue;
+			if (isArray || typeof oldvalue === "undefined" || newvalue !== oldvalue) {
+				isArray ? (change.arguments = newvalue) : (change.newValue = newvalue);
+				$.event.trigger(type + "Change", [change], context);
+			}
+		}
+		return ret;
+	}
+
+	// Raises arrayChanging and arrayChange events when arrays are manipulated with $.x methods
+	$.each("pop push reverse shift sort splice unshift".split(" "), function (i, name) {
+		$[name] = function (arr) {
+			var args = $.makeArray(arguments);
+			args.splice(0, 1);
+			return raiseEvents("array", arr, { change: name, arguments: args }, function (arguments) {
+				arr[name].apply(arr, arguments);
+			});
+		}
+	});
 
 	// Subscribes to array changes to update a template automatically
 	$.tmpl.linkArray = function loop(tmplItem, data, field) {
@@ -209,7 +212,7 @@
 		},
 		"link": {
 			_default: { $1: "$data", $2: "null" },
-			open: "_.push($.tmpl.linkAttr($item,$data,'$1',$.encode($1a),$2));"
+			open: "_.push($.tmpl.linkAttr($item,$data,'$1',$1a,$2));"
 		}
 	});
 

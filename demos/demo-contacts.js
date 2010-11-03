@@ -2,11 +2,11 @@ jQuery(function ($) {
 
 	// Contact Data
 	var contacts = [
-		{ firstName: "Dave", lastName: "Reed", age: 32, phones: [
+		{ firstName: "Dave", lastName: "Reed", age: 32, dateOfBirth: new Date("1/1/1978"), phones: [
 			{ type: "Mobile", number: "(555) 121-2121" },
 			{ type: "Home", number: "(555) 123-4567"}]
 		},
-		{ firstName: "John", lastName: "Doe", age: 87, phones: [
+		{ firstName: "John", lastName: "Doe", age: 87, dateOfBirth: new Date("1/1/1978"), phones: [
 			{ type: "Mobile", number: "5554442222" },
 			{ type: "Home", number: "(555) 999-1212"}]
 		}
@@ -28,6 +28,25 @@ jQuery(function ($) {
 		},
 		age: function (value, source, target) {
 			$(target).width(value + "px");
+		}
+	});
+
+
+	// Converters
+	$.extend($.converters, {
+		// linking converter that normalizes phone numbers
+		phone: { convert: 'phone', convertBack: 'phone' },
+		shortDate: {
+			convert: function (val) {
+				return $.format(val, "M/d/yyyy");
+			},
+			convertBack: function (str) {
+				var val = $.parseDate(str);
+
+				if (val !== null) {
+					return val;
+				}
+			}
 		}
 	});
 
