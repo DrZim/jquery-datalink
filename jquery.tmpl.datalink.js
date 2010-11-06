@@ -203,12 +203,12 @@
 	jQuery.extend(jQuery.tmpl.tag, {
 		"each": {
 			_default: { $2: "$index, $value" },
-			open: "$item.index=$index;$.tmpl.linkArray($item,$data,'$1');if($notnull_1){$.each($1a,function($2){with(this){",
+			open: "$.tmpl.linkArray($item,$data,'$1');if($notnull_1){$.each($1a,function($2){with(this){",
 			close: "}});}"
 		},
 		"tmpl": {
 			_default: { $2: "null" },
-			open: "$item.index=1;$.tmpl.linkArray($item,$data,'$2');if($notnull_1){_=_.concat($item.nest($1,$2));}"
+			open: "$.tmpl.linkArray($item,$data,'$2');if($notnull_1){_=_.concat($item.nest($1,$2));}"
 		},
 		"link": {
 			_default: { $1: "$data", $2: "null" },
