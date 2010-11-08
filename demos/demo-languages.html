@@ -1,0 +1,83 @@
+<!DOCTYPE html> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head>
+    <title>My Languages - Linking Demo</title>
+    <link type="text/css" rel="Stylesheet" href="demo-languages.css" />
+	<script type="text/javascript" src="../jquery.js"></script>
+	<script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.js"></script>
+	<script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmplPlus.js"></script>
+	<script type="text/javascript" src="../jquery.datalink.js"></script>
+	<script type="text/javascript" src="../jquery.tmpl.datalink.js"></script>
+	<script type="text/javascript" src="../jquery.glob.js"></script>
+	<script type="text/javascript" src="demo-languages.js"></script>
+
+	<script id="form" type="text/x-jquery-tmpl">
+		<tr>
+			<th>&nbsp;</th>
+			<th>Name</th>
+			<th>Year</th>
+			<th>Used?</th>
+			<th>Proficiency</th>
+			<th>Predecessors</th>
+		</tr>
+		{{tmpl(languages) "#language"}}
+	</script>
+
+	<script id="language" type="text/x-jquery-tmpl">
+		<tr class="language">
+			<td>
+				<a href="#" class="language-remove">remove</a><br/>
+			</td>
+			<td>
+				<input name="name" type="text" value="{{link name}}" />
+			</td>
+			<td>
+				<input name="year" type="text" value="{{link('year') year}}" />
+			</td>
+			<td>
+				<input name="used" type="checkbox" checked="{{link used}}" />
+			</td>
+			<td>
+				<select name="proficiency" value="{{link('proficiency') proficiency}}">
+					{{each proficiencies}}
+						<option value="${id}">${name}</options>
+					{{/each}}
+				</select>
+				{{each proficiencies}}
+				<input name="proficiency" type="radio" value="{{link('proficiency') proficiency}}" />${name}
+				{{/each}}
+			</td>
+			<td>
+				{{each allowedPredecessors}}
+				<input name="p" type="checkbox" value="{{link('language') predecessors}}" />${name}
+				{{/each}}
+			</td>				
+		</tr>
+	</script>
+
+</head>
+
+<body>
+<div>
+Form to test hierarchial forms, declarative linking with custom converters, and support for all conventional form input controls, including:
+<ul>
+	<li>input type="text"</li>
+	<li>input type="password"</li>
+	<li>input type="radio"</li>
+	<li>input type="checkbox"</li>
+	<li>select</li>
+	<li>textarea</li>
+</ul>
+</div>
+
+<table class="languages">
+
+</table>
+<!--<input type="button" id="insert" value="Insert new language" />
+<input type="button" id="save" value="Save languages" />
+-->
+<pre id="results">
+</pre>
+
+</body>
+</html>
