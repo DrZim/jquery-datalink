@@ -1,4 +1,4 @@
-﻿/*
+/*
 * jQuery Templating with Declarative Linking Plugin
 * by Jamie Thomas
 * www.vc3.com
